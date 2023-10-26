@@ -1,0 +1,58 @@
+This is a template for creating of a Helm chart for a typical microservice.
+
+It consists of 2 parts:
+
+- Helm library chart under ./helm-library-chart directory (containing all typical
+  Kubernetes objects required for a microservice deployment - configmap, deployment,
+  service, ingress, etc.); this is the base library chart that is supposed to be
+  used by multiple microservice application charts. It should not be modified unless
+  really needed. If you want to change the deployment process please make required
+  changes to the values.yaml file in your microservice application Helm chart that
+  imports this library chart.
+- Helm application example chart under ./helm-app-example-1 directory. This chart
+  does not contain any Kubernetes objects definitions; instead it imports them from
+  the library chart. All the required controls for the application are provided in
+  the values.yaml file (including all required variables, as well as some control
+  switches that enable/disable required functionality already present in the
+  library chart).
+
+Usage:
+
+1. Prepare your application Helm chart (using ./helm-app-example-1 as an example).
+
+1.1. Update the Chart.yaml file and set appropriate values for the variables:
+  - name
+  - description
+  - version
+  - appVersion
+
+1.2. Update the values.yaml file and set appropriate values for the present variables.
+  Enable the required functionality (replicas, volumes, volume mounts, ingress, etc.).
+
+2. Check and update the application Helm chart dependencies:
+
+  helm dependencies list ./helm-app-example-1 [--debug]
+  helm dependencies build ./helm-app-example-1 [--debug]
+
+  This will ensure that your application Helm chart contains the library chart
+  as a dependency.
+
+3. Build your application Helm chart:
+
+  helm package ./helm-app-example-1 --destination .
+
+  This command will generate a Helm package file for your application:
+
+  helm-app-example-1-0.1.0.tgz
+
+4. Install your application Helm chart to your Kuberenetes cluster:
+
+  helm install helm-app-example-1 ./helm-app-example-1-0.1.0.tgz --namespace <namespace> [--debug]
+
+5. Check your application Helm chart status:
+
+  helm list --all --namespace <namespace>
+
+6. Check your application deployment and make sure all the resources are OK:
+
+  kubectl --namespace <namespace> get all
