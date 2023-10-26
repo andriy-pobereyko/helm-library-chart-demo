@@ -1,0 +1,156 @@
+global:
+  environment: "development"
+
+
+app:
+
+  serviceAccount:
+    create: false
+    annotations: {}
+      #eks.amazonaws.com/role-arn: "arn:aws:iam::xxxxxxxxxxxx:role/service_iam_role"
+
+  replicas: "1"
+
+  autoscaling:
+    enabled: false
+    minReplicas: "2"
+    maxReplicas: "4"
+    stabilization_window:
+      scale_down: "3600"
+      scale_up: "60"
+    targetCPUUtilizationPercentage: "80"
+    targetMemoryUtilizationPercentage: "80"
+
+  imagePullSecrets:
+    - name: "dockerconfigjson"
+
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    privileged: false
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+    capabilities:
+      drop:
+        - ALL
+      add:
+
+  podAnnotations: {}
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  resources:
+    requests:
+      cpu: 1
+      memory: 256Mi
+    limits:
+      cpu: 1
+      memory: 512Mi
+
+  deployment:
+    revisionHistoryLimit: 4
+    customLabels:
+      # key1: value1
+    customAnnotations:
+      # key1: value1
+
+  initContainer:
+    enabled: true
+    imageUrl: "apobereyko/jenkins-test"
+    tag: "latest"
+    PullPolicy: "Always"
+    workingDir: "/app"
+    command: "/usr/bin/java"
+    args:
+      - "-version"
+
+  mainContainer:
+    imageUrl: "apobereyko/jenkins-test"
+    tag: "latest"
+    pullPolicy: "Always"
+    workingDir: "/app"
+    command: "/usr/bin/java"
+    args:
+      - "-Xms256M"
+      - "-Xmx384M"
+      - "-jar"
+      - "/app/jenkins.war"
+    ports:
+      - name: svcport
+        containerPort: 8080
+        protocol: TCP
+    livenessProbe:
+      tcpSocket:
+        port: svcport
+      initialDelaySeconds: 30
+      periodSeconds: 10
+    readinessProbe:
+      tcpSocket:
+        port: svcport
+      initialDelaySeconds: 30
+      periodSeconds: 10
+
+  service:
+    type: NodePort
+    ports:
+      - name: http
+        protocol: TCP
+        port: 8080
+        targetPort: 8080
+    customLabels:
+      # key1: value1
+    customAnnotations:
+      # key1: value1
+
+  service_port: "8080"
+
+  ingress:
+    enabled: true
+    className: "nginx"
+    #className: "alb"
+    customLabels:
+      # key1: value1
+    customAnnotations:
+      # key1: value1
+      # kubernetes.io/ingress.class: nginx
+      # kubernetes.io/tls-acme: "true"
+      #alb.ingress.kubernetes.io/target-type: "ip"
+      #alb.ingress.kubernetes.io/scheme: "internet-facing"
+      #alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:us-east-1:XXXXXXXXXXXX:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+      #alb.ingress.kubernetes.io/healthcheck-path: "/index.html"
+      #alb.ingress.kubernetes.io/healthcheck-interval-seconds: "10"
+      #alb.ingress.kubernetes.io/healthcheck-timeout-seconds: "5"
+    hosts:
+    - host: helm-app-example-1.com
+      paths:
+      - path: /
+        pathType: ImplementationSpecific
+    tls: []
+    #- secretName: chart-example-tls
+    #  hosts:
+    #  - example.com
+
+  addVolumes: true
+  volumes:
+    - name: helm-app-example-1
+      configMap:
+        name: helm-app-example-1
+
+  addVolumeMounts: true
+  volumeMounts:
+    - name: helm-app-example-1
+      mountPath: /app/app.conf
+      subPath: app.conf
+
+
+### Application-specific custom settings ###
+
+  app_config:
